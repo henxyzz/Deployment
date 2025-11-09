@@ -1,0 +1,14 @@
+{
+  "name": "deploy-panel",
+  "version": "1.0.0",
+  "description": "Web panel untuk deploy script Python/HTML/Node.js di background",
+  "main": "panel-server.js",
+  "scripts": {
+    "start": "node panel-server.js"
+  },
+  "author": "Henhen",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
