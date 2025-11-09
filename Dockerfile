@@ -13,6 +13,9 @@ RUN mkdir -p $SCRIPTS_DIR
 WORKDIR /app
 
 # Copy panel
+# Copy package.json & install dependencies
+COPY package.json /app/package.json
+RUN npm install
 COPY panel-server.js /app/panel-server.js
 COPY entrypoint.sh /app/entrypoint.sh
 COPY public /app/public
