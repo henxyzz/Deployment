@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-echo "==> Starting Deploy Panel..."
-# Start Node.js panel
+echo "==> Starting Pro Panel..."
 nohup node /app/panel-server.js &
 
 # Keep container alive
