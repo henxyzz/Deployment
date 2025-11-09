@@ -2,56 +2,169 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Deploy Panel</title>
+<title>Pro Panel Futuristic</title>
 <style>
-body { font-family: sans-serif; background: #0a0a1a; color: #fff; padding: 20px; }
-input, select, textarea { width: 100%; margin: 5px 0; padding: 8px; }
-button { padding: 10px 20px; margin-top: 10px; cursor: pointer; background: #00fff2; color: #000; border: none; }
+body {
+    background: #0a0a1a;
+    color: #0fffdb;
+    font-family: 'Segoe UI', sans-serif;
+    padding: 20px;
+}
+h1,h2,h3 { color:#ff00ff; }
+button {
+    padding: 6px 12px;
+    margin: 2px;
+    background: linear-gradient(90deg,#ff00ff,#00fff2);
+    border:none;
+    border-radius:6px;
+    color:#fff;
+    cursor:pointer;
+}
+input, select, textarea {
+    padding:5px;
+    margin:3px 0;
+    border-radius:4px;
+    border:1px solid #0fffdb;
+    background:#111;
+    color:#0fffdb;
+}
+#fileTree { max-height:300px; overflow-y:auto; border:1px solid #0fffdb; padding:5px; background: rgba(16,16,44,0.9); }
+.file-item { padding:2px 5px; cursor:pointer; }
+.file-item:hover { background: rgba(0,255,242,0.2); }
+textarea { width:100%; height:200px; background:#111; color:#0fffdb; font-family:monospace; }
+#logs { height:200px; overflow-y:auto; background:#111; border:1px solid #0fffdb; padding:5px; }
 </style>
 </head>
 <body>
-<h1>Deploy Script Panel</h1>
-<form id="deployForm">
-<select name="language" required>
+<h1>Pro Panel Futuristic</h1>
+
+<h3>File Management</h3>
+<input type="file" id="uploadFile">
+<button onclick="uploadFile()">Upload</button>
+<button onclick="uploadZIP()">Upload ZIP</button>
+<button onclick="refreshTree()">Refresh</button>
+<div id="fileTree"></div>
+
+<h3>File Editor</h3>
+<input type="text" id="editFileName" placeholder="Select a file">
+<textarea id="fileContent"></textarea>
+<br>
+<button onclick="saveFile()">Save</button>
+<button onclick="deleteFile()">Delete</button>
+<button onclick="renameFile()">Rename/Move</button>
+
+<h3>Script Control</h3>
+<select id="language">
 <option value="python">Python</option>
 <option value="node">Node.js</option>
 <option value="html">HTML</option>
+<option value="bash">Bash</option>
 </select>
-<input type="text" name="scriptName" placeholder="Script name" required>
-<textarea name="code" placeholder="Paste your code here" rows="10" required></textarea>
-<button type="submit">Deploy</button>
-</form>
-<h2>Running Scripts</h2>
-<pre id="status"></pre>
+<input type="text" id="scriptName" placeholder="Script name">
+<button onclick="startScript()">Start</button>
+<button onclick="stopScript()">Stop</button>
+
+<h3>Logs</h3>
+<pre id="logs"></pre>
 
 <script>
-const form = document.getElementById('deployForm');
-const statusEl = document.getElementById('status');
+// ---------------- File Explorer ---------------- //
+const fileTree = document.getElementById('fileTree');
+const fileContent = document.getElementById('fileContent');
+const editFileName = document.getElementById('editFileName');
 
-form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const formData = new FormData(form);
-    const res = await fetch('/deploy', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            language: formData.get('language'),
-            scriptName: formData.get('scriptName'),
-            code: formData.get('code')
-        })
+async function refreshTree(){
+    const res = await fetch('/api/list');
+    const files = await res.json();
+    fileTree.innerHTML = '';
+    files.forEach(f=>{
+        const div = document.createElement('div');
+        div.textContent = f.name + (f.isDir?' [Dir]':'');
+        div.className='file-item';
+        div.onclick = ()=>loadFile(f.name);
+        fileTree.appendChild(div);
     });
-    const data = await res.json();
-    alert(JSON.stringify(data));
-    updateStatus();
-});
-
-async function updateStatus() {
-    const res = await fetch('/status');
-    const data = await res.json();
-    statusEl.textContent = JSON.stringify(data, null, 2);
 }
-setInterval(updateStatus, 5000);
-updateStatus();
+
+async function loadFile(name){
+    editFileName.value = name;
+    const res = await fetch(`/api/read?file=${encodeURIComponent(name)}`);
+    if(res.ok) fileContent.value = await res.text();
+    else fileContent.value = '';
+}
+
+// ---------------- File Actions ---------------- //
+async function uploadFile(){
+    const f = document.getElementById('uploadFile').files[0];
+    if(!f) return alert('Select file');
+    const fd = new FormData();
+    fd.append('file',f);
+    await fetch('/api/upload',{method:'POST', body:fd});
+    refreshTree();
+}
+
+async function uploadZIP(){
+    const f = document.getElementById('uploadFile').files[0];
+    if(!f || !f.name.endsWith('.zip')) return alert('Select ZIP file');
+    const fd = new FormData();
+    fd.append('file',f);
+    await fetch('/api/upload',{method:'POST', body:fd});
+    refreshTree();
+}
+
+async function saveFile(){
+    const name = editFileName.value;
+    const content = fileContent.value;
+    if(!name) return alert('Select file');
+    await fetch('/api/save',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({file:name,content})});
+    alert('Saved');
+}
+
+async function deleteFile(){
+    const name = editFileName.value;
+    if(!name) return alert('Select file');
+    await fetch('/api/delete',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({path:name})});
+    refreshTree();
+}
+
+async function renameFile(){
+    const oldName = editFileName.value;
+    const newName = prompt('New name/path',oldName);
+    if(!oldName || !newName) return;
+    await fetch('/api/rename',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({oldPath:oldName,newPath:newName})});
+    editFileName.value=newName;
+    refreshTree();
+}
+
+// ---------------- Script Control ---------------- //
+const languageEl = document.getElementById('language');
+const scriptNameEl = document.getElementById('scriptName');
+
+async function startScript(){
+    const name = scriptNameEl.value;
+    const lang = languageEl.value;
+    if(!name) return alert('Script name required');
+    await fetch('/api/start',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({scriptName:name,language:lang})});
+    alert('Started');
+}
+
+async function stopScript(){
+    const name = scriptNameEl.value;
+    if(!name) return alert('Script name required');
+    await fetch('/api/stop',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({scriptName:name})});
+    alert('Stopped');
+}
+
+// ---------------- Logs via WebSocket ---------------- //
+const logsEl = document.getElementById('logs');
+const ws = new WebSocket(`ws://${location.host}`);
+ws.onmessage = (msg)=>{
+    const data = JSON.parse(msg.data);
+    if(data.logs) logsEl.textContent = `[${data.script}] ${data.logs}`;
+};
+
+// Initial
+refreshTree();
 </script>
 </body>
 </html>
