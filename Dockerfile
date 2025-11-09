@@ -9,7 +9,7 @@ COPY package.json /app/package.json
 RUN npm install --legacy-peer-deps
 
 # Copy source code
-COPY index.js /app/index.js
+COPY panel-server.js /app/panel-server.js
 
 # Expose port
 EXPOSE 8080
