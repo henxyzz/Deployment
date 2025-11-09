@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Deploy Panel</title>
+<style>
+body { font-family: sans-serif; background: #0a0a1a; color: #fff; padding: 20px; }
+input, select, textarea { width: 100%; margin: 5px 0; padding: 8px; }
+button { padding: 10px 20px; margin-top: 10px; cursor: pointer; background: #00fff2; color: #000; border: none; }
+</style>
+</head>
+<body>
+<h1>Deploy Script Panel</h1>
+<form id="deployForm">
+<select name="language" required>
+<option value="python">Python</option>
+<option value="node">Node.js</option>
+<option value="html">HTML</option>
+</select>
+<input type="text" name="scriptName" placeholder="Script name" required>
+<textarea name="code" placeholder="Paste your code here" rows="10" required></textarea>
+<button type="submit">Deploy</button>
+</form>
+<h2>Running Scripts</h2>
+<pre id="status"></pre>
+
+<script>
+const form = document.getElementById('deployForm');
+const statusEl = document.getElementById('status');
+
+form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(form);
+    const res = await fetch('/deploy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            language: formData.get('language'),
+            scriptName: formData.get('scriptName'),
+            code: formData.get('code')
+        })
+    });
+    const data = await res.json();
+    alert(JSON.stringify(data));
+    updateStatus();
+});
+
+async function updateStatus() {
+    const res = await fetch('/status');
+    const data = await res.json();
+    statusEl.textContent = JSON.stringify(data, null, 2);
+}
+setInterval(updateStatus, 5000);
+updateStatus();
+</script>
+</body>
+</html>
