@@ -1,23 +1,18 @@
+# Base image Node.js LTS
 FROM node:20-bullseye
 
-ENV PANEL_PORT=8080
-ENV SCRIPTS_DIR=/scripts
-
-# Install dependencies OS + build tools
-RUN apt-get update && apt-get install -y python3 python3-pip bash unzip curl wget sudo build-essential && rm -rf /var/lib/apt/lists/*
-
-RUN mkdir -p $SCRIPTS_DIR
+# Set working directory
 WORKDIR /app
 
+# Copy package.json & install dependencies
 COPY package.json /app/package.json
-
-# Bersihkan cache & install deps
-RUN npm cache clean --force
 RUN npm install --legacy-peer-deps
 
-COPY panel-server.js /app/panel-server.js
-COPY public /app/public
+# Copy source code
+COPY index.js /app/index.js
 
-EXPOSE ${PANEL_PORT}
+# Expose port
+EXPOSE 8080
 
-CMD ["node", "panel-server.js"]
+# Run Node in foreground
+CMD ["node", "index.js"]
